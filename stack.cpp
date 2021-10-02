@@ -30,30 +30,38 @@ int stackDtor(struct Stack* stack)
     return 0;
 }
 
-void stackResize(struct Stack* stack) //-------------ne void
+int stackResize(struct Stack* stack)
 {
-    if(stack->size >= stack->capacity)
+    if(stack->size == stack->capacity)
     {
         if(stack->size == 0)
         {
             stack->data = (int*)calloc(4, sizeof(int));
             stack->capacity += 4;
         }
-        else if (stack->size / 4 == 0)
+        else
         {
-            stack->data = (int*)calloc((stack->size * 2), sizeof(int));
+            stack->data = (int*)realloc(stack->data, (stack->size * 2)*sizeof(int));
             stack->capacity *= 2;
         }
     }
+    else if(stack->capacity/2 > stack->size)
+    {
+        stack->data = (int*)realloc(stack->data, (stack->capacity / 2)*sizeof(int));
+        stack->capacity /= 2;
+    }
+    return stack->capacity;
     
 }
 
 int stackPush(struct Stack* stack, int value)
 {
-    stackResize(stack);
-	(stack->data)[stack->size] = value;
-	stack->size++;
-	return (stack->data)[stack->size - 1];
+    if (stackResize(stack) > stack->size)
+	{
+        (stack->data)[stack->size] = value;
+        stack->size++;
+	    return (stack->data)[stack->size - 1];
+    }
 }
 
 int stackPop(struct Stack* stack)
@@ -61,8 +69,8 @@ int stackPop(struct Stack* stack)
     int tmp = (stack->data)[stack->size - 1];
     (stack->data)[stack->size - 1] = 0;
     stack->size--;
-    //stackResize();
+    stackResize(stack);
     return tmp;
 }
 
-//TODO: resize, typedef, error log
+//TODO: resize, typedef, error log, stack_is_ok, dump, canary, hash

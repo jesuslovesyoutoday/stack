@@ -44,7 +44,7 @@ int stackDtor(struct Stack* stack);
 //!                      depends on size
 //-----------------------------------------
 
-void stackResize(struct Stack* stack);
+int stackResize(struct Stack* stack);
 
 //-----------------------------------------
 //! 
