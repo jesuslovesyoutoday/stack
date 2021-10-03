@@ -7,6 +7,7 @@
 
 #define ZERO 0xF0
 #define POINTER_POISON (element*)13
+#define PUSH_POP_ERROR (element)322
 
 int stackCtor(struct Stack* stack)
 {
@@ -56,24 +57,47 @@ int stackResize(struct Stack* stack, int operation)
 
 element stackPush(struct Stack* stack, element value)
 {
-    if (stackResize(stack, +1) > stack->size)
-	{
-        puts("in the if");
-        *(stack->data + stack->size) = value;
-        puts("after pushing");
-        stack->size++;
+    if (stackIsOk(stack) == STACK_IS_OK)
+    {
+        if (stackResize(stack, +1) > stack->size)
+	    {
+            puts("in the if");
+            *(stack->data + stack->size) = value;
+            puts("after pushing");
+            stack->size++;
+        }
+        puts("before push return");
+        if(stackIsOk(stack) == STACK_IS_OK)
+            return *(stack->data + (stack->size - 1));
     }
-    puts("before push return");
-    return *(stack->data + (stack->size - 1));
+    return PUSH_POP_ERROR;
 }
 
 element stackPop(struct Stack* stack)
 {
-    element tmp = *(stack->data + (stack->size - 1));
-    *(stack->data + (stack->size - 1)) = 0;
-    stack->size--;
-    stackResize(stack, -1);
-    return tmp;
+    if (stackIsOk(stack) == STACK_IS_OK)
+    {
+        element tmp = *(stack->data + (stack->size - 1));
+        *(stack->data + (stack->size - 1)) = 0;
+        stack->size--;
+        stackResize(stack, -1);
+        if (stackIsOk(stack) == STACK_IS_OK)
+            return tmp;
+    }
+    return PUSH_POP_ERROR;
 }
 
-//TODO: error log, stack_is_ok, dump, canary, hash
+enum stackStatus stackIsOk(struct Stack* stack)
+{
+    if (!stack)
+        return NULL_STACK_PTR;
+    if (stack->size > stack->capacity)
+        return SIZE_B_CAPACITY;
+    if (stack->size < 0)
+        return NEGATIVE_SIZE;
+    if (stack->capacity < 0)
+        return NEGATIVE_CAPACITY;
+    return STACK_IS_OK;
+}
+
+//TODO: error log(?), dump, canary, hash

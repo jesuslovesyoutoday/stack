@@ -23,7 +23,7 @@ int main()
     int el9 = stackPush(&stack, 8);
     int el10 = stackPush(&stack, 9);
     
-    for (int i = 0; i < stack.size; i++)
+    /*for (int i = 0; i < stack.size; i++)
     {
         printf("%d\n", stack.data[i]);
     }
@@ -39,7 +39,7 @@ int main()
     int poped5 = stackPop(&stack);
     printf("poped element = %d\n", poped5);
     
-    printf("capacity = %d size = %d\n", stack.capacity, stack.size);
+    printf("capacity = %d size = %d\n", stack.capacity, stack.size);*/
     
     puts("dtor");
     stackDtor(&stack);

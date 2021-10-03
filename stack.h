@@ -69,11 +69,39 @@ element stackPush(struct Stack* stack, element value);
 //!
 //! Pop last-in element from stack
 //! 
-//! @param[out] <stack>    pointer to stack
+//! @param[out]   <stack>  pointer to stack
 //!
 //! @return poped element
 //!
 //-----------------------------------------
+
 element stackPop(struct Stack* stack);
+
+//-----------------------------------------
+//!
+//! Enum to describe stack errors
+//!
+//-----------------------------------------
+
+enum stackStatus {
+    STACK_IS_OK       = 0,
+    NULL_STACK_PTR    = 1,
+    SIZE_B_CAPACITY   = 2,
+    NEGATIVE_SIZE     = 3,
+    NEGATIVE_CAPACITY = 4
+};
+
+
+//-----------------------------------------
+//!
+//! Stack invariant, checks params' errors
+//!
+//! @param[in] <stack> pointer to stack
+//!
+//! @return type of error
+//!
+//-----------------------------------------
+
+enum stackStatus stackIsOk(struct Stack* stack);
 
 #endif // STACK_H
