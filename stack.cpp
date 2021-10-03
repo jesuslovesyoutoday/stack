@@ -6,7 +6,7 @@
 #include <stdio.h>
 
 #define ZERO 0xF0
-#define POINTER_POISON (int*)13
+#define POINTER_POISON (element*)13
 
 int stackCtor(struct Stack* stack)
 {
@@ -30,47 +30,50 @@ int stackDtor(struct Stack* stack)
     return 0;
 }
 
-int stackResize(struct Stack* stack)
+int stackResize(struct Stack* stack, int operation)
 {
-    if(stack->size == stack->capacity)
+    if(stack->size == stack->capacity && operation > 0)
     {
         if(stack->size == 0)
         {
-            stack->data = (int*)calloc(4, sizeof(int));
+            stack->data = (element*)calloc(4, sizeof(element));
             stack->capacity += 4;
         }
         else
         {
-            stack->data = (int*)realloc(stack->data, (stack->size * 2)*sizeof(int));
+            stack->data = (element*)realloc(stack->data, (stack->size * 2)*sizeof(element));
             stack->capacity *= 2;
         }
     }
-    else if(stack->capacity/2 > stack->size)
+    else if(stack->capacity/2 > stack->size && operation < 0)
     {
-        stack->data = (int*)realloc(stack->data, (stack->capacity / 2)*sizeof(int));
+        stack->data = (element*)realloc(stack->data, (stack->capacity / 2)*sizeof(element));
         stack->capacity /= 2;
     }
     return stack->capacity;
     
 }
 
-int stackPush(struct Stack* stack, int value)
+element stackPush(struct Stack* stack, element value)
 {
-    if (stackResize(stack) > stack->size)
+    if (stackResize(stack, +1) > stack->size)
 	{
-        (stack->data)[stack->size] = value;
+        puts("in the if");
+        *(stack->data + stack->size) = value;
+        puts("after pushing");
         stack->size++;
-	    return (stack->data)[stack->size - 1];
     }
+    puts("before push return");
+    return *(stack->data + (stack->size - 1));
 }
 
-int stackPop(struct Stack* stack)
+element stackPop(struct Stack* stack)
 {
-    int tmp = (stack->data)[stack->size - 1];
-    (stack->data)[stack->size - 1] = 0;
+    element tmp = *(stack->data + (stack->size - 1));
+    *(stack->data + (stack->size - 1)) = 0;
     stack->size--;
-    stackResize(stack);
+    stackResize(stack, -1);
     return tmp;
 }
 
-//TODO: resize, typedef, error log, stack_is_ok, dump, canary, hash
+//TODO: error log, stack_is_ok, dump, canary, hash

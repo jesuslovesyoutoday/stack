@@ -41,7 +41,9 @@ int main()
     
     printf("capacity = %d size = %d\n", stack.capacity, stack.size);
     
+    puts("dtor");
     stackDtor(&stack);
+    puts("end of dtor");
     
     return 0;
 } 
