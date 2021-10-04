@@ -4,14 +4,25 @@
 #include <cstring>
 #include <cstdlib>
 #include <stdio.h>
+#include <stddef.h>
 
 #define ZERO 0xF0
-#define POINTER_POISON (element*)13
-#define PUSH_POP_ERROR (element)322
+#define POINTER_POISON (void*)13
+#define PUSH_POP_ERROR (void*)322
 #define LEFT_CANARY  0xA7EDED
 #define RIGHT_CANARY 0xB1000D
 
-int stackCtor(struct Stack* stack)
+static void copy(void* el1, void* el2, size_t el_size)
+{
+    char* ptr1 = (char*)el1;
+    char* ptr2 = (char*)el2; 
+    for (int k = 0; k < el_size; k++)
+    {
+		ptr2[k] = ptr1[k];
+	}
+}
+
+int stackCtor(struct Stack* stack, size_t el_size)
 {
     assert(stack);
     stack->data         = NULL;
@@ -20,6 +31,7 @@ int stackCtor(struct Stack* stack)
     stack->capacity     = 0;
     stack->hash         = 0;
     stack->hash         = hashFunc(stack); //- уберется в релизной версии
+    stack->el_size = el_size;
     
     return 0;
 }
@@ -30,7 +42,8 @@ int stackDtor(struct Stack* stack)
     memset(stack->data, ZERO, stack->size);
     assert(stack->data != POINTER_POISON);
     free(stack->left_canary);
-    stack->data = POINTER_POISON;
+    stack->data        = POINTER_POISON;
+    stack->left_canary = (unsigned long long int*)POINTER_POISON;
     stack->size = -1;
     
     return 0;
@@ -42,64 +55,60 @@ int stackResize(struct Stack* stack, int operation)
     {
         if(stack->size == 0)
         {
-            stack->data = (element*)malloc(4*sizeof(element) + 2*sizeof(unsigned long long int)); //- уберется в релизной версии
-            //stack->data = (element*)malloc(4*sizeof(element)); ------------------------------------ добавится в релизной версии
+            printf("Yeah: %d\n", stack->data);
+            stack->left_canary = (unsigned long long int*)malloc(4 * stack->el_size + 2 * sizeof(unsigned long long int)); //----- уберется в релизной версии
+            //stack->data = (void*)malloc(4 * stack->el_size); ------------------------------------------ добавится в релизной версии
             stack->capacity += 4;
-            stack->left_canary = (unsigned long long int*)(stack->data);
-            (*stack->data) = LEFT_CANARY;                                           // 
-            stack->data = (element*)((unsigned long long int*)(stack->data) + 1);   // -------------- уберутся в релизной версии
-            *(stack->data + stack->capacity) = RIGHT_CANARY;                        //
+            (*stack->left_canary) = LEFT_CANARY;                  // 
+            stack->data = (void*)(stack->left_canary + 1);        // ---------------- уберутся в релизной версии
+            *(unsigned long long int*)((char*)stack->data + stack->capacity * stack->el_size) = RIGHT_CANARY;       //
         }
         else
         {
             stack->left_canary = (unsigned long long int*)realloc(stack->left_canary, 
-                                 (stack->size * 2)*sizeof(element) + 2*sizeof(unsigned long long int)); //- уберется в релизной версии
-            //stack->data = (element*)realloc(stack->data, (stack->size * 2)*sizeof(element)); //---------- добавится в релизной версии
-            stack->data = (element*)(stack->left_canary + 1); //------------------------------------------- 
-            *(stack->data + stack->capacity) = (element)0;    //------------------------------------------- уберутся в релизной версии
+                                 (stack->size * 2) * stack->el_size + 2 * sizeof(unsigned long long int));//- уберется в релизной версии
+            //stack->data = (void*)realloc(stack->data, (stack->size * 2)*(stack->el_size)); //-------------- добавится в релизной версии
+            stack->data = (void*)(stack->left_canary + 1); //------------------------------------------------ 
             stack->capacity *= 2;
-            *(stack->data + stack->capacity) = RIGHT_CANARY;  //------------------------------------------- уберется в релизной версии
+            *(unsigned long long int*)((char*)stack->data + stack->capacity * stack->el_size) = RIGHT_CANARY;  //---- уберется в релизной версии
         }
     }
     else if(stack->capacity/2 > stack->size && operation < 0)
     {
         stack->left_canary = (unsigned long long int*)realloc(stack->left_canary, 
-                             (stack->capacity / 2)*sizeof(element) + 2*sizeof(unsigned long long int)); //- уберется в релизной версии
-        //stack->data = (element*)realloc(stack->data, (stack->capacity / 2)*sizeof(element)); //---------- добавится в релизной версии
-        stack->data = (element*)(stack->left_canary + 1); //----------------------------------------------- уберется в релизной версии
+                             (stack->capacity / 2) * stack->el_size + 2*sizeof(unsigned long long int));//- уберется в релизной версии
+        //stack->data = (void*)realloc(stack->data, (stack->capacity / 2) * stack->el_size);   //---------- добавится в релизной версии
+        stack->data = (void*)(stack->left_canary + 1);    //----------------------------------------------- уберется в релизной версии
         stack->capacity /= 2;
-        *(stack->data + stack->capacity) = RIGHT_CANARY;  //----------------------------------------------- уберется в релизной версии
+        *(unsigned long long int*)((char*)stack->data + stack->capacity * stack->el_size) = RIGHT_CANARY;  //------ уберется в релизной версии
     }
     return stack->capacity;
-    
 }
 
-element stackPush(struct Stack* stack, element value)
+void* stackPush(struct Stack* stack, void* value)
 {
     if (stackIsOk(stack) == STACK_IS_OK)
     {
-        if (stackResize(stack, +1) > stack->size)
-	    {
-            *(stack->data + stack->size) = value;
-            stack->size++;
-        }
+        stackResize(stack, +1);
+	    copy(value, (void*)((char*)stack->data + stack->size * stack->el_size), stack->el_size);
+        stack->size++;
+        
         hashFunc(stack); //--------------------------- уберется в релизной версии
-        if(stackIsOk(stack) == STACK_IS_OK)
-            return *(stack->data + (stack->size - 1));
+        if(stackIsOk(stack) == STACK_IS_OK) //-------- уберется в релизной версии
+            return (void*)((char*)stack->data + (stack->size - 1) * stack->el_size);
     }
     return PUSH_POP_ERROR;
 }
 
-element stackPop(struct Stack* stack)
+void* stackPop(struct Stack* stack)
 {
     if (stackIsOk(stack) == STACK_IS_OK)
     {
-        element tmp = *(stack->data + (stack->size - 1));
-        *(stack->data + (stack->size - 1)) = 0;
+        void* tmp = (void*)((char*)stack->data + (stack->size - 1) * stack->el_size);
         stack->size--;
         stackResize(stack, -1);
         hashFunc(stack);//---------------------------- уберется в релизной версии
-        if (stackIsOk(stack) == STACK_IS_OK)
+        if (stackIsOk(stack) == STACK_IS_OK) //------- уберется в релизной версии
             return tmp;
     }
     return PUSH_POP_ERROR;

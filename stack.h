@@ -1,7 +1,9 @@
 #ifndef STACK_H
 #define STACK_H
 
-typedef int element;
+#include <stddef.h>
+
+//typedef int element;
 
 //---------------------
 //!
@@ -11,7 +13,8 @@ typedef int element;
 
 struct Stack
 {
-    element* data;                       //< pointer to the first element
+    void* data;                          //< pointer to the first stack element
+    size_t el_size;                      //< size of data type
     unsigned int size;                   //< amount of stored elements
     unsigned int capacity;               //< amount of allocated memory available for elements
     unsigned long long int* left_canary; //< pointer to the allocated memory ---------------------------- уберется в релизной версии
@@ -27,7 +30,7 @@ struct Stack
 //!
 //-----------------------------------------
 
-int stackCtor(struct Stack* stack);
+int stackCtor(struct Stack* stack, size_t el_size);
 
 //-----------------------------------------
 //!
@@ -65,7 +68,7 @@ int stackResize(struct Stack* stack, int operation);
 //!
 //-----------------------------------------
 
-element stackPush(struct Stack* stack, element value);
+void* stackPush(struct Stack* stack, void* value);
 
 //-----------------------------------------
 //!
@@ -77,7 +80,7 @@ element stackPush(struct Stack* stack, element value);
 //!
 //-----------------------------------------
 
-element stackPop(struct Stack* stack);
+void* stackPop(struct Stack* stack);
 
 //-----------------------------------------
 //!
