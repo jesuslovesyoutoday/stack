@@ -16,9 +16,9 @@ int stackCtor(struct Stack* stack)
     assert(stack);
     stack->data         = NULL;
     stack->left_canary  = NULL;
-    stack->right_canary = NULL;
     stack->size         = 0;
     stack->capacity     = 0;
+    stack->hash = hashFunc(stack);
     
     return 0;
 }
@@ -82,6 +82,7 @@ element stackPush(struct Stack* stack, element value)
             *(stack->data + stack->size) = value;
             stack->size++;
         }
+        hashFunc(stack);
         if(stackIsOk(stack) == STACK_IS_OK)
             return *(stack->data + (stack->size - 1));
     }
@@ -98,6 +99,7 @@ element stackPop(struct Stack* stack)
         stackResize(stack, -1);
         if (stackIsOk(stack) == STACK_IS_OK)
             return tmp;
+        hashFunc(stack);
     }
     return PUSH_POP_ERROR;
 }
@@ -112,7 +114,20 @@ enum stackStatus stackIsOk(struct Stack* stack)
         return NEGATIVE_SIZE;
     if (stack->capacity < 0)
         return NEGATIVE_CAPACITY;
+    if (stack->hash != hashFunc(stack))
+        return HASH_MISMATCH;
     return STACK_IS_OK;
 }
 
-//TODO: error log(?), dump, canary, hash
+unsigned long long int hashFunc(struct Stack* stack)
+{
+    unsigned long long int hash = 0;
+    for (int i = 0; i < stack->size; i++)
+    {
+        hash += stack->data[i] % 13;
+    }
+    stack->hash = hash;
+    return hash;
+}
+
+//TODO: error log(?), dump, hash

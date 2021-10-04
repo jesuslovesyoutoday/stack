@@ -11,11 +11,11 @@ typedef int element;
 
 struct Stack
 {
-    element* data;         //< pointer to the first element
-    unsigned int size;     //< amount of stored elements
-    unsigned int capacity; //< amount of allocated memory
-    unsigned long long int* left_canary;
-    unsigned long long int* right_canary;
+    element* data;                       //< pointer to the first element
+    unsigned int size;                   //< amount of stored elements
+    unsigned int capacity;               //< amount of allocated memory available for elements
+    unsigned long long int* left_canary; //< pointer to the allocated memory ---------------------------- уберется в релизной версии
+    unsigned long long int hash;         //< outcome of hash-function ----------------------------------- уберется в релизной версии
 };
 
 //-----------------------------------------
@@ -90,7 +90,8 @@ enum stackStatus {
     NULL_STACK_PTR    = 1,
     SIZE_B_CAPACITY   = 2,
     NEGATIVE_SIZE     = 3,
-    NEGATIVE_CAPACITY = 4
+    NEGATIVE_CAPACITY = 4,
+    HASH_MISMATCH     = 5
 };
 
 
@@ -105,5 +106,17 @@ enum stackStatus {
 //-----------------------------------------
 
 enum stackStatus stackIsOk(struct Stack* stack);
+
+//-----------------------------------------
+//!
+//! Counts hash to check if data is ok
+//!
+//! @param[in] <stack> pointer to stack
+//!
+//! @return outcome of function
+//!
+//-----------------------------------------
+
+unsigned long long int hashFunc(struct Stack* stack);
 
 #endif // STACK_H
