@@ -14,6 +14,8 @@ struct Stack
     element* data;         //< pointer to the first element
     unsigned int size;     //< amount of stored elements
     unsigned int capacity; //< amount of allocated memory
+    unsigned long long int* left_canary;
+    unsigned long long int* right_canary;
 };
 
 //-----------------------------------------
