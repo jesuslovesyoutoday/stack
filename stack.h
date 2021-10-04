@@ -1,9 +1,9 @@
 #ifndef STACK_H
 #define STACK_H
 
-#include <stddef.h>
+#define MODE DEBUG
 
-//typedef int element;
+#include <stddef.h>
 
 //---------------------
 //!
@@ -13,12 +13,12 @@
 
 struct Stack
 {
-    void* data;                          //< pointer to the first stack element
-    size_t el_size;                      //< size of data type
-    unsigned int size;                   //< amount of stored elements
-    unsigned int capacity;               //< amount of allocated memory available for elements
-    unsigned long long int* left_canary; //< pointer to the allocated memory ---------------------------- уберется в релизной версии
-    char hash;                           //< outcome of hash-function ----------------------------------- уберется в релизной версии
+    void* data;                              //< pointer to the first stack element
+    size_t el_size;                          //< size of data type
+    unsigned int size;                       //< amount of stored elements
+    unsigned int capacity;                   //< amount of allocated memory available for elements
+    unsigned long long int* left_canary;     //< pointer to the allocated memory 
+    char hash;                               //< outcome of hash-function
 };
 
 //-----------------------------------------
