@@ -15,7 +15,7 @@ struct Stack
     unsigned int size;                   //< amount of stored elements
     unsigned int capacity;               //< amount of allocated memory available for elements
     unsigned long long int* left_canary; //< pointer to the allocated memory ---------------------------- уберется в релизной версии
-    unsigned long long int hash;         //< outcome of hash-function ----------------------------------- уберется в релизной версии
+    char hash;                           //< outcome of hash-function ----------------------------------- уберется в релизной версии
 };
 
 //-----------------------------------------
@@ -117,6 +117,6 @@ enum stackStatus stackIsOk(struct Stack* stack);
 //!
 //-----------------------------------------
 
-unsigned long long int hashFunc(struct Stack* stack);
+char hashFunc(struct Stack* stack);
 
 #endif // STACK_H
