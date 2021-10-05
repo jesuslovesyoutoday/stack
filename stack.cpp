@@ -15,11 +15,43 @@
 static void copy(void* el1, void* el2, size_t el_size)
 {
     char* ptr1 = (char*)el1;
-    char* ptr2 = (char*)el2; 
-    for (int k = 0; k < el_size; k++)
+    char* ptr2 = (char*)el2;
+    int size = el_size;
+    int i = 0;
+    
+    
+    while (size > 0)
+    {
+    	if (size >= sizeof(unsigned long long int))
+    	{
+    		((unsigned long long int*)ptr2)[i] = ((unsigned long long int*)ptr1)[i];
+    		i++;
+    		size -= sizeof(unsigned long long int);
+    	}
+    	else if (size >= sizeof(int))
+    	{
+    		((int*)ptr2)[i] = ((int*)ptr1)[i];
+    		i++;
+    		size -= sizeof(int);
+    	}
+    	else if (size >= sizeof(short int*))
+    	{
+    		((short int*)ptr2)[i] = ((short int*)ptr1)[i];
+			i++;
+			size -= sizeof(short int);
+		}
+		else if (size >= sizeof(char))
+		{
+			((char*)ptr2)[i] = ((char*)ptr1)[i];
+			i++;
+			size -= sizeof(char);
+		}
+    }
+    
+    /*for (int k = 0; k < el_size; k++)
     {
 		ptr2[k] = ptr1[k];
-	}
+	}*/
 }
 
 int stackCtor(struct Stack* stack, size_t el_size)
@@ -44,11 +76,19 @@ int stackDtor(struct Stack* stack)
 {
     assert(stack);
     memset(stack->data, ZERO, stack->size);
-    assert(stack->data != POINTER_POISON);
-    free(stack->left_canary);
-    stack->data        = POINTER_POISON;
-    stack->left_canary = (unsigned long long int*)POINTER_POISON;
-    stack->size = -1;
+    #if MODE == DEBUG
+    {
+    	assert(stack->data != POINTER_POISON);
+    	free(stack->left_canary);
+    	stack->data        = POINTER_POISON;
+    	stack->left_canary = (unsigned long long int*)POINTER_POISON;
+    	stack->size = -1;
+    }
+    #else
+    {
+    	free(stack->data);
+    }
+    #endif
     
     return 0;
 }
@@ -82,7 +122,7 @@ int stackResize(struct Stack* stack, int operation)
             *(unsigned long long int*)((char*)stack->data + stack->capacity * stack->el_size) = RIGHT_CANARY;
             }
             #else
-            	stack->data = (void*)realloc(stack->data, (stack->size * 2)*(stack->el_size)); //-------------- добавится в релизной версии
+            	stack->data = (void*)realloc(stack->data, (stack->size * 2)*(stack->el_size));
             #endif
         }
     }
@@ -178,4 +218,4 @@ char hashFunc(struct Stack* stack)
     return hash;
 }
 
-//TODO: error log(?), dump
+//TODO: dump
