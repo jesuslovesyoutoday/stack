@@ -9,8 +9,9 @@
 #define ZERO 0xF0
 #define POINTER_POISON (void*)13
 #define PUSH_POP_ERROR (void*)322
-#define LEFT_CANARY  0xA7EDED
-#define RIGHT_CANARY 0xB1000D
+#define LEFT_CANARY  0xB100D666
+#define RIGHT_CANARY 0xB100D666
+#define STRUCT_CANARY 0xCA7A7EDED
 
 static void copy(void* el1, void* el2, size_t el_size)
 {
@@ -57,6 +58,25 @@ static void copy(void* el1, void* el2, size_t el_size)
 int stackCtor(struct Stack* stack, size_t el_size)
 {
     assert(stack);
+
+    #ifdef DEBUG
+        stack->data = NULL;
+        *((unsigned long long int*)(&stack->data) - 1) = STRUCT_CANARY;
+        stack->size = 0;
+        stack->capacity = 0;
+        stack->el_size = el_size;
+        stack->left_canary = NULL;
+        stack->hash = 0;
+        stack->hash = hashFunc(stack);
+        *(unsigned long long int*)(&stack->hash + 1) = STRUCT_CANARY;
+    #else
+        stack->data = NULL;
+        stack->size = 0;
+        stack->capacity = 0;
+        stack->el_size = el_size;
+    #endif
+
+    /*assert(stack);
     stack->data         = NULL;
     stack->size         = 0;
     stack->capacity     = 0;
@@ -65,7 +85,7 @@ int stackCtor(struct Stack* stack, size_t el_size)
         stack->left_canary  = NULL;
         stack->hash = 0;
         stack->hash = hashFunc(stack);
-    #endif
+    #endif*/
     
     return 0;
 }
@@ -226,8 +246,19 @@ void* stackPop(struct Stack* stack)
     {
         FILE* fin = fopen("dump.txt", "a");
 
-        fprintf(fin, "Stack <%s> at: [%p] ERROR: %d\n", TYPE, stack->data, status);
-        fprintf(fin, "//-----------------------------//\n");
+        fprintf(fin, "//---------------------------//\n");
+        fprintf(fin, "      Stack structure:\n");
+        fprintf(fin, "      ----------------\n");
+        fprintf(fin, "CANARY      - |0x%08x|\n", *((unsigned long long int*)(&stack->data) - 1));
+        fprintf(fin, "DATA        - |%p|\n", stack->data);
+        fprintf(fin, "SIZE        - |%d|\n", stack->size);
+        fprintf(fin, "CAPACITY    - |%d|\n", stack->capacity);
+        fprintf(fin, "EL_SIZE     - |%d|\n", stack->el_size);
+        fprintf(fin, "LEFT_CANARY - |%p|\n", stack->left_canary);
+        fprintf(fin, "HASH        - |0x%08x|\n", stack->hash);
+        fprintf(fin, "CANARY      - |0x%08x|\n\n", *(unsigned long long int*)(&stack->hash + 1));
+		fprintf(fin, "//---------------------------//\n\n");
+        fprintf(fin, "Stack <%s> at: [%p], hash = 0x%08x, ERROR: %d\n\n", TYPE, stack->data, stack->hash, status);
         fprintf(fin, "-> [CANARY] = 0x%08x\n", *(stack->left_canary));
     
         void* ptr = stack->data;
