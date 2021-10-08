@@ -1,7 +1,9 @@
 #ifndef STACK_H
 #define STACK_H
 
-#define MODE DEBUG
+#define DEBUG
+#define TYPE "INT"
+#define STRUCT_PRINT
 
 #include <stddef.h>
 
@@ -17,8 +19,10 @@ struct Stack
     size_t el_size;                          //< size of data type
     unsigned int size;                       //< amount of stored elements
     unsigned int capacity;                   //< amount of allocated memory available for elements
-    unsigned long long int* left_canary;     //< pointer to the allocated memory 
-    char hash;                               //< outcome of hash-function
+    #ifdef DEBUG
+        unsigned long long int* left_canary;     //< pointer to the allocated memory 
+        char hash;                               //< outcome of hash-function
+    #endif
 };
 
 //-----------------------------------------
@@ -121,5 +125,19 @@ enum stackStatus stackIsOk(struct Stack* stack);
 //-----------------------------------------
 
 char hashFunc(struct Stack* stack);
+
+//-----------------------------------------
+//!
+//! Visualizing stack in memory for debug
+//!
+//! @param[in] <stack>  pointer to stack
+//! @param[in] <status> outcome of error 
+//!                             checking
+//! @note you need to define type of your
+//! stack elements at the beginning of
+//!                               stack.h
+//-----------------------------------------
+
+void stackDump(struct Stack* stack, enum stackStatus status);
 
 #endif // STACK_H
