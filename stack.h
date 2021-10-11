@@ -17,10 +17,10 @@ struct Stack
 {
     void* data;                              //< pointer to the first stack element
     size_t el_size;                          //< size of data type
-    unsigned int size;                       //< amount of stored elements
-    unsigned int capacity;                   //< amount of allocated memory available for elements
+    unsigned size;                       //< amount of stored elements
+    unsigned capacity;                   //< amount of allocated memory available for elements
     #ifdef DEBUG
-        unsigned long long int* left_canary;     //< pointer to the allocated memory 
+        size_t* left_canary;     //< pointer to the allocated memory 
         char hash;                               //< outcome of hash-function
     #endif
 };

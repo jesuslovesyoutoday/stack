@@ -13,6 +13,8 @@
 #define RIGHT_CANARY 0xB100D666
 #define STRUCT_CANARY 0xCA7A7EDED
 
+
+
 static void copy(void* el1, void* el2, size_t el_size)
 {
     char* ptr1 = (char*)el1;
@@ -23,11 +25,11 @@ static void copy(void* el1, void* el2, size_t el_size)
     
     while (size > 0)
     {
-    	if (size >= sizeof(unsigned long long int))
+    	if (size >= sizeof(size_t))
     	{
-    		((unsigned long long int*)ptr2)[i] = ((unsigned long long int*)ptr1)[i];
+    		((size_t*)ptr2)[i] = ((size_t*)ptr1)[i];
     		i++;
-    		size -= sizeof(unsigned long long int);
+    		size -= sizeof(size_t);
     	}
     	else if (size >= sizeof(int))
     	{
@@ -35,7 +37,7 @@ static void copy(void* el1, void* el2, size_t el_size)
     		i++;
     		size -= sizeof(int);
     	}
-    	else if (size >= sizeof(short int*))
+    	else if (size >= sizeof(short int))
     	{
     		((short int*)ptr2)[i] = ((short int*)ptr1)[i];
 			i++;
@@ -48,11 +50,6 @@ static void copy(void* el1, void* el2, size_t el_size)
 			size -= sizeof(char);
 		}
     }
-    
-    /*for (int k = 0; k < el_size; k++)
-    {
-		ptr2[k] = ptr1[k];
-	}*/
 }
 
 int stackCtor(struct Stack* stack, size_t el_size)
@@ -61,14 +58,14 @@ int stackCtor(struct Stack* stack, size_t el_size)
 
     #ifdef DEBUG
         stack->data = NULL;
-        *((unsigned long long int*)(&stack->data) - 1) = STRUCT_CANARY;
+        *((size_t*)(&stack->data) - 1) = STRUCT_CANARY;
         stack->size = 0;
         stack->capacity = 0;
         stack->el_size = el_size;
         stack->left_canary = NULL;
         stack->hash = 0;
         stack->hash = hashFunc(stack);
-        *(unsigned long long int*)(&stack->hash + 1) = STRUCT_CANARY;
+        *(size_t*)(&stack->hash + 1) = STRUCT_CANARY;
     #else
         stack->data = NULL;
         stack->size = 0;
@@ -76,17 +73,6 @@ int stackCtor(struct Stack* stack, size_t el_size)
         stack->el_size = el_size;
     #endif
 
-    /*assert(stack);
-    stack->data         = NULL;
-    stack->size         = 0;
-    stack->capacity     = 0;
-    stack->el_size = el_size;
-    #ifdef DEBUG
-        stack->left_canary  = NULL;
-        stack->hash = 0;
-        stack->hash = hashFunc(stack);
-    #endif*/
-    
     return 0;
 }
 
@@ -98,7 +84,7 @@ int stackDtor(struct Stack* stack)
     	assert(stack->data != POINTER_POISON);
     	free(stack->left_canary);
     	stack->data        = POINTER_POISON;
-    	stack->left_canary = (unsigned long long int*)POINTER_POISON;
+    	stack->left_canary = (size_t*)POINTER_POISON;
     	stack->size = -1;
     #else
     	free(stack->data);
@@ -115,10 +101,10 @@ int stackResize(struct Stack* stack, int operation)
         {
             stack->capacity += 4;
             #ifdef DEBUG
-                stack->left_canary = (unsigned long long int*)malloc(4 * stack->el_size + 2 * sizeof(unsigned long long int));
+                stack->left_canary = (size_t*)malloc(4 * stack->el_size + 2 * sizeof(size_t));
                 (*stack->left_canary) = LEFT_CANARY;
             	stack->data = (void*)(stack->left_canary + 1);
-            	*(unsigned long long int*)((char*)stack->data + stack->capacity * stack->el_size) = RIGHT_CANARY;
+            	*(size_t*)((char*)stack->data + stack->capacity * stack->el_size) = RIGHT_CANARY;
             #else
                 stack->data = (void*)malloc(4 * stack->el_size);
             #endif
@@ -127,10 +113,10 @@ int stackResize(struct Stack* stack, int operation)
         {
             stack->capacity *= 2;
             #ifdef DEBUG
-                stack->left_canary = (unsigned long long int*)realloc(stack->left_canary, 
-                                    (stack->size * 2) * stack->el_size + 2 * sizeof(unsigned long long int));
+                stack->left_canary = (size_t*)realloc(stack->left_canary, 
+                                    (stack->size * 2) * stack->el_size + 2 * sizeof(size_t));
                 stack->data = (void*)(stack->left_canary + 1);
-            *(unsigned long long int*)((char*)stack->data + stack->capacity * stack->el_size) = RIGHT_CANARY;
+            *(size_t*)((char*)stack->data + stack->capacity * stack->el_size) = RIGHT_CANARY;
             #else
             	stack->data = (void*)realloc(stack->data, (stack->size * 2)*(stack->el_size));
             #endif
@@ -139,11 +125,11 @@ int stackResize(struct Stack* stack, int operation)
     else if(stack->capacity/4 > stack->size && operation < 0)
     {
     	#ifdef DEBUG
-        	stack->left_canary = (unsigned long long int*)realloc(stack->left_canary, 
-            	                 (stack->capacity / 2) * stack->el_size + 2*sizeof(unsigned long long int));
+        	stack->left_canary = (size_t*)realloc(stack->left_canary, 
+            	                 (stack->capacity / 2) * stack->el_size + 2*sizeof(size_t));
             stack->data = (void*)(stack->left_canary + 1); 
             stack->capacity /= 2;
-        	*(unsigned long long int*)((char*)stack->data + stack->capacity * stack->el_size) = RIGHT_CANARY;
+        	*(size_t*)((char*)stack->data + stack->capacity * stack->el_size) = RIGHT_CANARY;
         #else
         	stack->data = (void*)realloc(stack->data, (stack->capacity / 2) * stack->el_size);
         	stack->capacity /= 2;
@@ -249,14 +235,14 @@ void* stackPop(struct Stack* stack)
         fprintf(fin, "//---------------------------//\n");
         fprintf(fin, "      Stack structure:\n");
         fprintf(fin, "      ----------------\n");
-        fprintf(fin, "CANARY      - |0x%08x|\n", *((unsigned long long int*)(&stack->data) - 1));
+        fprintf(fin, "CANARY      - |0x%08x|\n", *((size_t*)(&stack->data) - 1));
         fprintf(fin, "DATA        - |%p|\n", stack->data);
         fprintf(fin, "SIZE        - |%d|\n", stack->size);
         fprintf(fin, "CAPACITY    - |%d|\n", stack->capacity);
         fprintf(fin, "EL_SIZE     - |%d|\n", stack->el_size);
         fprintf(fin, "LEFT_CANARY - |%p|\n", stack->left_canary);
         fprintf(fin, "HASH        - |0x%08x|\n", stack->hash);
-        fprintf(fin, "CANARY      - |0x%08x|\n\n", *(unsigned long long int*)(&stack->hash + 1));
+        fprintf(fin, "CANARY      - |0x%08x|\n\n", *(size_t*)(&stack->hash + 1));
 		fprintf(fin, "//---------------------------//\n\n");
         fprintf(fin, "Stack <%s> at: [%p], hash = 0x%08x, ERROR: %d\n\n", TYPE, stack->data, stack->hash, status);
         fprintf(fin, "-> [CANARY] = 0x%08x\n", *(stack->left_canary));
@@ -270,7 +256,7 @@ void* stackPop(struct Stack* stack)
                 fprintf(fin, "* [%d] = 0x%08x\n", i, *((char*)stack->data + i));
         #endif
     
-        fprintf(fin, "-> [CANARY] = 0x%08x\n", *((unsigned long long int*)((char*)stack->data + stack->capacity * stack->el_size)));
+        fprintf(fin, "-> [CANARY] = 0x%08x\n", *((size_t*)((char*)stack->data + stack->capacity * stack->el_size)));
         fprintf(fin, "//-----------------------------//\n\n\n");
         fflush(fin);
         fclose(fin);
