@@ -2,6 +2,19 @@
 #define STACK_H
 
 #define DEBUG
+
+#ifdef DEBUG
+    #define ERROR_LOG
+    #define CANARY
+    #define HASH
+    #define DUMP
+#endif
+
+//#define ERROR_LOG
+//#define CANARY
+//#define HASH
+//#define DUMP
+
 #define TYPE "INT"
 #define STRUCT_PRINT
 
@@ -15,13 +28,15 @@
 
 struct Stack
 {
-    void* data;                              //< pointer to the first stack element
-    size_t el_size;                          //< size of data type
+    void* data;                          //< pointer to the first stack element
+    size_t el_size;                      //< size of data type
     unsigned size;                       //< amount of stored elements
     unsigned capacity;                   //< amount of allocated memory available for elements
-    #ifdef DEBUG
-        size_t* left_canary;     //< pointer to the allocated memory 
-        char hash;                               //< outcome of hash-function
+    #ifdef CANARY
+        size_t* left_canary;             //< pointer to the allocated memory
+    #endif
+    #ifdef HASH 
+        char hash;                       //< outcome of hash-function
     #endif
 };
 
@@ -72,7 +87,7 @@ int stackResize(struct Stack* stack, int operation);
 //!
 //-----------------------------------------
 
-void* stackPush(struct Stack* stack, void* value);
+void stackPush(struct Stack* stack, void* value);
 
 //-----------------------------------------
 //!
@@ -84,7 +99,7 @@ void* stackPush(struct Stack* stack, void* value);
 //!
 //-----------------------------------------
 
-void* stackPop(struct Stack* stack);
+void stackPop(struct Stack* stack);
 
 //-----------------------------------------
 //!

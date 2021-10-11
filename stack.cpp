@@ -56,21 +56,22 @@ int stackCtor(struct Stack* stack, size_t el_size)
 {
     assert(stack);
 
-    #ifdef DEBUG
-        stack->data = NULL;
+    stack->data = NULL;
+    #ifdef CANARY
         *((size_t*)(&stack->data) - 1) = STRUCT_CANARY;
-        stack->size = 0;
-        stack->capacity = 0;
-        stack->el_size = el_size;
+    #endif
+    stack->size = 0;
+    stack->capacity = 0;
+    stack->el_size = el_size;
+    #ifdef CANARY
         stack->left_canary = NULL;
+    #endif
+    #ifdef HASH
         stack->hash = 0;
         stack->hash = hashFunc(stack);
         *(size_t*)(&stack->hash + 1) = STRUCT_CANARY;
-    #else
-        stack->data = NULL;
-        stack->size = 0;
-        stack->capacity = 0;
-        stack->el_size = el_size;
+    #elif defined CANARY
+        *(size_t*)(&stack->left_canary + 1) = STRUCT_CANARY;
     #endif
 
     return 0;
@@ -80,14 +81,18 @@ int stackDtor(struct Stack* stack)
 {
     assert(stack);
     memset(stack->data, ZERO, stack->size);
-    #ifdef DEBUG
+    #ifdef ERROR_LOG
     	assert(stack->data != POINTER_POISON);
+    #endif
+    #ifdef CANARY
     	free(stack->left_canary);
-    	stack->data        = POINTER_POISON;
-    	stack->left_canary = (size_t*)POINTER_POISON;
-    	stack->size = -1;
+        stack->left_canary = (size_t*)POINTER_POISON;
     #else
-    	free(stack->data);
+        free(stack->data);
+    #endif
+    #ifdef STACK_STATUS 
+    	stack->data        = POINTER_POISON;
+    	stack->size = -1;
     #endif
     
     return 0;
@@ -100,7 +105,7 @@ int stackResize(struct Stack* stack, int operation)
         if(stack->size == 0)
         {
             stack->capacity += 4;
-            #ifdef DEBUG
+            #ifdef CANARY
                 stack->left_canary = (size_t*)malloc(4 * stack->el_size + 2 * sizeof(size_t));
                 (*stack->left_canary) = LEFT_CANARY;
             	stack->data = (void*)(stack->left_canary + 1);
@@ -112,7 +117,7 @@ int stackResize(struct Stack* stack, int operation)
         else
         {
             stack->capacity *= 2;
-            #ifdef DEBUG
+            #ifdef CANARY
                 stack->left_canary = (size_t*)realloc(stack->left_canary, 
                                     (stack->size * 2) * stack->el_size + 2 * sizeof(size_t));
                 stack->data = (void*)(stack->left_canary + 1);
@@ -124,7 +129,7 @@ int stackResize(struct Stack* stack, int operation)
     }
     else if(stack->capacity/4 > stack->size && operation < 0)
     {
-    	#ifdef DEBUG
+    	#ifdef CANARY
         	stack->left_canary = (size_t*)realloc(stack->left_canary, 
             	                 (stack->capacity / 2) * stack->el_size + 2*sizeof(size_t));
             stack->data = (void*)(stack->left_canary + 1); 
@@ -138,9 +143,9 @@ int stackResize(struct Stack* stack, int operation)
     return stack->capacity;
 }
 
-void* stackPush(struct Stack* stack, void* value)
+void stackPush(struct Stack* stack, void* value)
 {
-	#ifdef DEBUG
+	#ifdef ERROR_LOG
     	if (stackIsOk(stack) == STACK_IS_OK)
     	{
         	stackResize(stack, +1);
@@ -148,52 +153,57 @@ void* stackPush(struct Stack* stack, void* value)
         	stack->size++;
             stackDump(stack, stackIsOk(stack));
         
-        	hashFunc(stack);
-        	if(stackIsOk(stack) == STACK_IS_OK)
-        	    return (void*)((char*)stack->data + (stack->size - 1) * stack->el_size);
-            else 
-            {
-                stackDump(stack, stackIsOk(stack));
-                return PUSH_POP_ERROR;
-            }
+        	#ifdef HASH
+                hashFunc(stack);
+            #endif
+            #ifdef DUMP
+                if (stackIsOk(stack) != STACK_IS_OK)
+                    stackDump(stack, stackIsOk(stack));
+            #endif
     	}
     	else
     	{
-    		stackDump(stack, stackIsOk(stack));
-    		return PUSH_POP_ERROR;
+            #ifdef DUMP
+    		    stackDump(stack, stackIsOk(stack));
+            #endif
     	}
     #else
     	stackResize(stack, +1);
 	    copy(value, (void*)((char*)stack->data + stack->size * stack->el_size), stack->el_size);
         stack->size++;
-        return (void*)((char*)stack->data + (stack->size - 1) * stack->el_size);
 	#endif
 }
 
-void* stackPop(struct Stack* stack)
+void stackPop(struct Stack* stack)
 {
-    #ifdef DEBUG
+    #ifdef ERROR_LOG
         if (stackIsOk(stack) == STACK_IS_OK)
         {   
             void* tmp = (void*)((char*)stack->data + (stack->size - 1) * stack->el_size);
             stack->size--;
             stackResize(stack, -1);
-        	hashFunc(stack);
-        	if (stackIsOk(stack) == STACK_IS_OK)
-            	return tmp;
-            else
+            #ifdef HASH
+        	    hashFunc(stack);
+            #endif
+            #ifdef DUMP
+        	    if (stackIsOk(stack) != STACK_IS_OK)
+            	    stackDump(stack, stackIsOk(stack));
+            #endif
+        }
+        else
+        {
+            #ifdef DUMP
                 stackDump(stack, stackIsOk(stack));
+            #endif
         }
     #else
     	void* tmp = (void*)((char*)stack->data + (stack->size - 1) * stack->el_size);
         stack->size--;
         stackResize(stack, -1);
-        return tmp;
     #endif 
-    return PUSH_POP_ERROR;
 }
 
-#ifdef DEBUG
+#ifdef ERROR_LOG
     enum stackStatus stackIsOk(struct Stack* stack)
     {
         if (!stack)
@@ -204,11 +214,14 @@ void* stackPop(struct Stack* stack)
             return NEGATIVE_SIZE;
         if (stack->capacity < 0)
             return NEGATIVE_CAPACITY;
-        if (stack->hash != hashFunc(stack))
-            return HASH_MISMATCH;
+        #ifdef HASH
+            if (stack->hash != hashFunc(stack))
+                return HASH_MISMATCH;
+        #endif
         return STACK_IS_OK;
     }
-
+#endif
+#ifdef HASH
     char hashFunc(struct Stack* stack)
     {
         char hash = 0;
@@ -219,7 +232,8 @@ void* stackPop(struct Stack* stack)
         stack->hash = hash;
         return hash;
     }
-
+#endif
+#ifdef DUMP
     void structPrint(struct Stack* stack, FILE* fin)
     {
         for (int i = 0; i < stack->size; i++)
@@ -231,7 +245,9 @@ void* stackPop(struct Stack* stack)
     void stackDump(struct Stack* stack, enum stackStatus status)
     {
         FILE* fin = fopen("dump.txt", "a");
-
+        setbuf(fin, NULL);
+		
+		fprintf(fin, "Stack <%s> at: [%p], hash = 0x%08x, ERROR: %d\n\n", TYPE, stack->data, stack->hash, status);
         fprintf(fin, "//---------------------------//\n");
         fprintf(fin, "      Stack structure:\n");
         fprintf(fin, "      ----------------\n");
@@ -244,7 +260,7 @@ void* stackPop(struct Stack* stack)
         fprintf(fin, "HASH        - |0x%08x|\n", stack->hash);
         fprintf(fin, "CANARY      - |0x%08x|\n\n", *(size_t*)(&stack->hash + 1));
 		fprintf(fin, "//---------------------------//\n\n");
-        fprintf(fin, "Stack <%s> at: [%p], hash = 0x%08x, ERROR: %d\n\n", TYPE, stack->data, stack->hash, status);
+        //fprintf(fin, "Stack <%s> at: [%p], hash = 0x%08x, ERROR: %d\n\n", TYPE, stack->data, stack->hash, status);
         fprintf(fin, "-> [CANARY] = 0x%08x\n", *(stack->left_canary));
     
         void* ptr = stack->data;
