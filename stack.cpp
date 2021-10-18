@@ -1,4 +1,5 @@
 #include "stack.h"
+#include "user_func.h"
 #include <assert.h>
 #include <cstddef>
 #include <cstring>
@@ -12,7 +13,6 @@
 #define LEFT_CANARY  0xB100D666
 #define RIGHT_CANARY 0xB100D666
 #define STRUCT_CANARY 0xCA7A7EDED
-
 
 
 static void copy(void* el1, void* el2, size_t el_size)
@@ -82,7 +82,7 @@ int stackDtor(struct Stack* stack)
     assert(stack);
     memset(stack->data, ZERO, stack->size);
     #ifdef ERROR_LOG
-    	assert(stack->data != POINTER_POISON);
+    	assert(stack->left_canary != POINTER_POISON);
     #endif
     #ifdef CANARY
     	free(stack->left_canary);
@@ -91,7 +91,7 @@ int stackDtor(struct Stack* stack)
         free(stack->data);
     #endif
     #ifdef STACK_STATUS 
-    	stack->data        = POINTER_POISON;
+    	stack->left_canary = POINTER_POISON;
     	stack->size = -1;
     #endif
     
@@ -151,12 +151,12 @@ void stackPush(struct Stack* stack, void* value)
         	stackResize(stack, +1);
 	    	copy(value, (void*)((char*)stack->data + stack->size * stack->el_size), stack->el_size);
         	stack->size++;
-            stackDump(stack, stackIsOk(stack));
         
         	#ifdef HASH
                 hashFunc(stack);
             #endif
             #ifdef DUMP
+            	stackDump(stack, stackIsOk(stack));
                 if (stackIsOk(stack) != STACK_IS_OK)
                     stackDump(stack, stackIsOk(stack));
             #endif
@@ -210,10 +210,6 @@ void stackPop(struct Stack* stack)
             return NULL_STACK_PTR;
         if (stack->size > stack->capacity)
             return SIZE_B_CAPACITY;
-        if (stack->size < 0)
-            return NEGATIVE_SIZE;
-        if (stack->capacity < 0)
-            return NEGATIVE_CAPACITY;
         #ifdef HASH
             if (stack->hash != hashFunc(stack))
                 return HASH_MISMATCH;
@@ -222,7 +218,7 @@ void stackPop(struct Stack* stack)
     }
 #endif
 #ifdef HASH
-    char hashFunc(struct Stack* stack)
+    unsigned int hashFunc(struct Stack* stack)
     {
         char hash = 0;
         for (int i = 0; i < stack->size; i++)
@@ -230,18 +226,28 @@ void stackPop(struct Stack* stack)
             hash += (((char*)stack->data)[i]);
         }
         stack->hash = hash;
+        
         return hash;
     }
 #endif
-#ifdef DUMP
-    void structPrint(struct Stack* stack, FILE* fin)
-    {
-        for (int i = 0; i < stack->size; i++)
-            fprintf(fin, "* [%d] = %d\n", i, *((int*)stack->data + i));
-        for (int i = stack->size; i < stack->capacity; i++)
-            fprintf(fin, "[%d]\n", i);
-    }
 
+void intstructPrint(struct Stack* stack, FILE* fin)
+{
+	for (int i = 0; i < stack->size; i++)
+        fprintf(fin, "* [%d] = %d\n", i, *((int*)stack->data + i));
+    for (int i = stack->size; i < stack->capacity; i++)
+        fprintf(fin, "[%d]\n", i);
+}
+    
+void charstructPrint(struct Stack* stack, FILE* fin)
+{
+	for (int i = 0; i < stack->size; i++)
+    	fprintf(fin, "* [%d] = %c\n", i, *((char*)stack->data + i));
+    for (int i = stack->size; i < stack->capacity; i++)
+        fprintf(fin, "[%d]\n", i);
+}
+
+#ifdef DUMP
     void stackDump(struct Stack* stack, enum stackStatus status)
     {
         FILE* fin = fopen("dump.txt", "a");
@@ -260,13 +266,12 @@ void stackPop(struct Stack* stack)
         fprintf(fin, "HASH        - |0x%08x|\n", stack->hash);
         fprintf(fin, "CANARY      - |0x%08x|\n\n", *(size_t*)(&stack->hash + 1));
 		fprintf(fin, "//---------------------------//\n\n");
-        //fprintf(fin, "Stack <%s> at: [%p], hash = 0x%08x, ERROR: %d\n\n", TYPE, stack->data, stack->hash, status);
         fprintf(fin, "-> [CANARY] = 0x%08x\n", *(stack->left_canary));
     
         void* ptr = stack->data;
     
         #ifdef STRUCT_PRINT
-            structPrint(stack, fin);
+        	stack->printStruct(stack, fin);
         #else
             for (int i = 0; i < stack->size * stack->el_size; i++)
                 fprintf(fin, "* [%d] = 0x%08x\n", i, *((char*)stack->data + i));

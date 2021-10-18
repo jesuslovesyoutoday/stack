@@ -1,24 +1,22 @@
 #ifndef STACK_H
 #define STACK_H
 
-#define DEBUG
-
-#ifdef DEBUG
-    #define ERROR_LOG
-    #define CANARY
-    #define HASH
-    #define DUMP
-#endif
-
-//#define ERROR_LOG
-//#define CANARY
-//#define HASH
-//#define DUMP
+#define ERROR_LOG
+#define CANARY
+#define HASH
+#define DUMP
 
 #define TYPE "INT"
+#define CHAR
 #define STRUCT_PRINT
 
+#include <stdio.h>
 #include <stddef.h>
+#include <string.h>
+#include "user_func.h"
+
+void intstructPrint(struct Stack* stack, FILE* fin);
+void charstructPrint(struct Stack* stack, FILE* fin);
 
 //---------------------
 //!
@@ -32,6 +30,8 @@ struct Stack
     size_t el_size;                      //< size of data type
     unsigned size;                       //< amount of stored elements
     unsigned capacity;                   //< amount of allocated memory available for elements
+    const char* type; 						 //< type of stack elements
+    void (*printStruct)(struct Stack*, FILE*);
     #ifdef CANARY
         size_t* left_canary;             //< pointer to the allocated memory
     #endif
@@ -39,6 +39,23 @@ struct Stack
         char hash;                       //< outcome of hash-function
     #endif
 };
+
+//-------------------------------------------
+//!
+//! Macros to identify type of stack elements
+//! @note inits elems type field and user
+//! print struct func
+//!
+//-------------------------------------------
+
+#define glue(x, y) x##y
+
+#define stackCtor_(Stack, type_)                   	  \
+{                                                 	  \
+    Stack.type = #type_;            	          	  \
+    Stack.printStruct = glue(type_, structPrint);     \
+    stackCtor(&Stack, sizeof(type_));                 \
+}
 
 //-----------------------------------------
 //!
@@ -139,7 +156,25 @@ enum stackStatus stackIsOk(struct Stack* stack);
 //!
 //-----------------------------------------
 
-char hashFunc(struct Stack* stack);
+#ifdef HASH
+    unsigned int hashFunc(struct Stack* stack);
+#endif
+
+//----------------------------------------
+//!
+//! Func to print user's structure in dump
+//!
+//! @param[in] <stack> pointer to stack
+//!
+//! @param[out] <fin>  file to write stack
+//!
+//! @note neede to be given by user
+//!
+//----------------------------------------
+
+#ifdef DUMP
+    void structPrint(struct Stack* stack, FILE* fin);
+#endif
 
 //-----------------------------------------
 //!
@@ -153,6 +188,8 @@ char hashFunc(struct Stack* stack);
 //!                               stack.h
 //-----------------------------------------
 
-void stackDump(struct Stack* stack, enum stackStatus status);
+#ifdef DUMP
+    void stackDump(struct Stack* stack, enum stackStatus status);
+#endif
 
 #endif // STACK_H
