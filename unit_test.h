@@ -72,7 +72,6 @@ void unitTest2()
             s2 = 1;
             break;
         }
-        printf("%c\n", stack4.top());
         stack4.pop();
     }
     if (s2 == 0)

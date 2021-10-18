@@ -36,7 +36,7 @@ struct Stack
         size_t* left_canary;             //< pointer to the allocated memory
     #endif
     #ifdef HASH 
-        char hash;                       //< outcome of hash-function
+        unsigned int hash;                       //< outcome of hash-function
     #endif
 };
 
