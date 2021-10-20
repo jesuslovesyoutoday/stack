@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include "user_func.h"
 
-void unitTest1()
+static void unitTest1()
 {
 
 //===================================================================//
@@ -15,7 +15,7 @@ void unitTest1()
     puts("Filling stack and std::stack with the same elements\n");
     
     struct Stack stack1;
-    stackCtor_(stack1, int);
+    stackCtor(stack1, int);
     std::stack<int> stack2;
     
     for (int i = 0; i < 100; i++)
@@ -42,7 +42,7 @@ void unitTest1()
     stackDtor(&stack1);
 }
 
-void unitTest2()
+static void unitTest2()
 {
 //===================================================================//
  
@@ -50,7 +50,7 @@ void unitTest2()
     puts("Filling stack and std::stack with the same elements\n");
     
     struct Stack stack3;
-    stackCtor_(stack3, char);
+    stackCtor(stack3, char);
     std::stack<char> stack4;
     
     const char* ebobo = "ihatemyself";

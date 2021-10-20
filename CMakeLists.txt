@@ -5,4 +5,5 @@ set(LANGUAGE CXX)
 
 add_executable(stack
                main.cpp
-               stack.cpp)
+               stack.cpp
+               user_func.cpp)

@@ -50,11 +50,11 @@ struct Stack
 
 #define glue(x, y) x##y
 
-#define stackCtor_(Stack, type_)                   	  \
+#define stackCtor(Stack, type_)                   	  \
 {                                                 	  \
     Stack.type = #type_;            	          	  \
     Stack.printStruct = glue(type_, structPrint);     \
-    stackCtor(&Stack, sizeof(type_));                 \
+    stackCtor_(&Stack, sizeof(type_));                 \
 }
 
 //-----------------------------------------
@@ -66,7 +66,7 @@ struct Stack
 //!
 //-----------------------------------------
 
-int stackCtor(struct Stack* stack, size_t el_size);
+int stackCtor_(struct Stack* stack, size_t el_size);
 
 //-----------------------------------------
 //!

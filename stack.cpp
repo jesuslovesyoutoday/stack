@@ -52,7 +52,7 @@ static void copy(void* el1, void* el2, size_t el_size)
     }
 }
 
-int stackCtor(struct Stack* stack, size_t el_size)
+int stackCtor_(struct Stack* stack, size_t el_size)
 {
     assert(stack);
 
@@ -273,22 +273,6 @@ void stackPop(struct Stack* stack)
         return hash;
     }
 #endif
-
-void intstructPrint(struct Stack* stack, FILE* fin)
-{
-	for (int i = 0; i < stack->size; i++)
-        fprintf(fin, "* [%d] = %d\n", i, *((int*)stack->data + i));
-    for (int i = stack->size; i < stack->capacity; i++)
-        fprintf(fin, "[%d]\n", i);
-}
-    
-void charstructPrint(struct Stack* stack, FILE* fin)
-{
-	for (int i = 0; i < stack->size; i++)
-    	fprintf(fin, "* [%d] = %c\n", i, *((char*)stack->data + i));
-    for (int i = stack->size; i < stack->capacity; i++)
-        fprintf(fin, "[%d]\n", i);
-}
 
 #ifdef DUMP
     void stackDump(struct Stack* stack, enum stackStatus status)
